@@ -1,122 +1,160 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import { useEffect, useMemo, useState } from 'react';
+import './App.css';
+import AuthPage from './components/AuthPage';
+import Dashboard from './pages/Dashboard';
+import {
+  getCurrentSession,
+  signInWithEmail,
+  signOutUser,
+  signUpWithEmail,
+  subscribeToAuthChanges,
+} from './lib/auth';
 
-function App() {
-  const [count, setCount] = useState(0)
+function formatAuthError(error) {
+  const message = error?.message || 'Something went wrong.';
 
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+  if (/invalid login credentials|invalid credentials/i.test(message)) {
+    return 'Incorrect email or password. Please try again.';
+  }
 
-      <div className="ticks"></div>
+  if (/email.*already.*registered|user already registered|already exists/i.test(message)) {
+    return 'An account with this email already exists. Please log in instead.';
+  }
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+  if (/password/i.test(message) && /least|minimum|6 characters/i.test(message)) {
+    return 'Password must be at least 6 characters long.';
+  }
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+  if (/email not confirmed|confirm your email/i.test(message)) {
+    return 'Please check your email and confirm your account before signing in.';
+  }
+
+  if (/rate limit|too many requests/i.test(message)) {
+    return 'Too many attempts. Please wait a moment and try again.';
+  }
+
+  if (/network|fetch/i.test(message)) {
+    return 'We could not reach the authentication service. Please try again.';
+  }
+
+  return 'Unable to complete that action. Please check your details and try again.';
 }
 
-export default App
+function App() {
+  const [session, setSession] = useState(null);
+  const [authMode, setAuthMode] = useState('login');
+  const [authError, setAuthError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
+
+  const user = useMemo(() => session?.user ?? null, [session]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const restoreSession = async () => {
+      try {
+        const { data: { session: currentSession }, error } = await getCurrentSession();
+
+        if (error) {
+          throw error;
+        }
+
+        if (isMounted) {
+          setSession(currentSession);
+        }
+      } catch (error) {
+        if (isMounted) {
+          setAuthError(formatAuthError(error));
+        }
+      } finally {
+        if (isMounted) {
+          setIsCheckingSession(false);
+        }
+      }
+    };
+
+    restoreSession();
+
+    const { data: { subscription } } = subscribeToAuthChanges(({ session: nextSession }) => {
+      if (!isMounted) {
+        return;
+      }
+
+      setSession(nextSession);
+      if (!nextSession) {
+        setAuthMode('login');
+      }
+      setAuthError('');
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const handleAuthSubmit = async ({ email, password }) => {
+    setAuthError('');
+    setIsSubmitting(true);
+
+    try {
+      const request = authMode === 'signup'
+        ? signUpWithEmail({ email, password })
+        : signInWithEmail({ email, password });
+
+      const { data, error } = await request;
+
+      if (error) {
+        throw error;
+      }
+
+      if (authMode === 'signup' && data?.user && !data.session) {
+        setAuthError('Account created successfully. Check your email to confirm your sign-in.');
+      }
+    } catch (error) {
+      setAuthError(formatAuthError(error));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    const { error } = await signOutUser();
+
+    if (error) {
+      setAuthError(formatAuthError(error));
+      return;
+    }
+
+    setSession(null);
+    setAuthMode('login');
+  };
+
+  if (isCheckingSession) {
+    return (
+      <main className="auth-shell auth-loading">
+        <section className="auth-card loading-card" aria-live="polite">
+          <div className="loading-spinner" aria-hidden="true" />
+          <p>Checking your session...</p>
+        </section>
+      </main>
+    );
+  }
+
+  if (!session?.user) {
+    return (
+      <AuthPage
+        mode={authMode}
+        setMode={setAuthMode}
+        onSubmit={handleAuthSubmit}
+        submitting={isSubmitting}
+        error={authError}
+      />
+    );
+  }
+
+  return <Dashboard onLogout={handleLogout} isLoggingOut={false} />;
+}
+
+export default App;
