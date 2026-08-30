@@ -11,6 +11,7 @@ export default function SortableExpenseCard({
   onAddGroceryEntry,
   onAddGroceryWeek,
   onDeleteExpense,
+  onAddExpense,
   onDeleteWeekItem,
   groceryTotal,
   onGroceryWeeksChange,
@@ -37,6 +38,7 @@ export default function SortableExpenseCard({
         onAddGroceryEntry={onAddGroceryEntry}
         onAddGroceryWeek={onAddGroceryWeek}
         onDeleteExpense={onDeleteExpense}
+        onAddExpense={onAddExpense}
         onDeleteWeekItem={onDeleteWeekItem}
         dragHandleProps={{ ...attributes, ...listeners }}
         style={{}}

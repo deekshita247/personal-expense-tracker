@@ -258,6 +258,13 @@ export default function Dashboard({ onLogout, isLoggingOut }) {
     });
   };
 
+  const handleAddExpense = (categoryId, expense) => {
+    setExpenseEntries((currentEntries) => ({
+      ...currentEntries,
+      [categoryId]: [...(currentEntries[categoryId] || []), expense],
+    }));
+  };
+
   const changeMonth = (offset) => {
     const [year, month] = selectedMonth.split('-').map(Number);
     const nextDate = new Date(year, month - 1 + offset, 1);
@@ -330,6 +337,7 @@ export default function Dashboard({ onLogout, isLoggingOut }) {
                     onAddGroceryEntry={category.id === 'groceries' ? handleAddNormalGroceryEntry : () => {}}
                     onAddGroceryWeek={category.id === 'groceries' ? handleAddGroceryWeek : () => {}}
                     onDeleteExpense={category.id === 'groceries' ? handleDeleteNormalGroceryEntry : (expenseId) => handleDeleteExpense(category.id, expenseId)}
+                    onAddExpense={category.id === 'groceries' ? undefined : (expense) => handleAddExpense(category.id, expense)}
                     onDeleteWeekItem={handleDeleteWeekItem}
                   />
                 );

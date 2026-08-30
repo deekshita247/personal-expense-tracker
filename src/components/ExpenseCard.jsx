@@ -23,6 +23,7 @@ export default function ExpenseCard({
   groceryEntries = [],
   onOpenGroceries,
   onDeleteExpense,
+  onAddExpense,
   dragHandleProps = {},
   style = {},
   isDragging = false,
@@ -53,6 +54,23 @@ export default function ExpenseCard({
 
     setGroceryDraftName('');
     setGroceryDraftAmount('');
+  };
+
+  const handleAddExpense = () => {
+    const name = description.trim();
+    const value = Number(amount);
+
+    if (!name || !Number.isFinite(value) || value <= 0) {
+      return;
+    }
+
+    const id = typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `${category.id}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+    onAddExpense?.({ id, name, amount: value });
+    setDescription('');
+    setAmount('');
   };
 
   return (
@@ -171,18 +189,20 @@ export default function ExpenseCard({
                   placeholder={currency}
                   aria-label={`${category.name} amount`}
                 />
-                <button type="button" className="add-button">
+                <button
+                  type="button"
+                  className="add-button"
+                  onPointerDown={(event) => event.stopPropagation()}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    handleAddExpense();
+                  }}
+                >
                   + Add
                 </button>
               </div>
             </>
           )}
-
-          {category.id !== 'groceries' ? (
-            <button type="button" className="weekly-breakdown-button" onClick={onOpenGroceries}>
-              Weekly breakdown
-            </button>
-          ) : null}
         </div>
       ) : null}
     </article>
