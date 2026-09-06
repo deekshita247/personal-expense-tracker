@@ -50,7 +50,7 @@ export default function ExpenseCard({
       return;
     }
 
-    onAddGroceryEntry({ id: `${Date.now()}-${name}`, name, amount: value });
+    onAddGroceryEntry({ id: crypto.randomUUID(), name, amount: value });
 
     setGroceryDraftName('');
     setGroceryDraftAmount('');

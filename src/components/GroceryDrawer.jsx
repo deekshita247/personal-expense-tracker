@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import GroceryWeek from './GroceryWeek';
 import { formatMoney } from '../lib/currency';
 
-export default function GroceryDrawer({ isOpen, onClose, weeks, currency, onWeeksChange, selectedWeekId, onSelectWeek, onDeleteWeekItem }) {
+export default function GroceryDrawer({ isOpen, onClose, weeks, currency, selectedWeekId, onAddWeek, onDeleteWeek, onAddItem, onEditItem, onDeleteWeekItem, onToggleCollapse }) {
   const [editingItem, setEditingItem] = useState(null);
 
   const selectedWeek = weeks.find((week) => week.id === selectedWeekId) ?? weeks[0] ?? null;
@@ -22,33 +22,15 @@ export default function GroceryDrawer({ isOpen, onClose, weeks, currency, onWeek
   }, [selectedWeek, weeks]);
 
   const handleAddWeek = () => {
-    const nextIndex = weeks.length + 1;
-    const nextWeek = {
-      id: `week-${nextIndex}-${Date.now()}`,
-      label: `Week ${nextIndex}`,
-      collapsed: false,
-      items: [],
-    };
-
-    onWeeksChange((currentWeeks) => [...currentWeeks, nextWeek]);
-    onSelectWeek?.(nextWeek.id);
+    onAddWeek?.();
   };
 
   const handleDeleteWeek = (weekId) => {
-    onWeeksChange((currentWeeks) => {
-      const nextWeeks = currentWeeks.filter((week) => week.id !== weekId);
-      const nextSelectedWeek = nextWeeks[0]?.id ?? null;
-      onSelectWeek?.(nextSelectedWeek);
-      return nextWeeks;
-    });
+    onDeleteWeek?.(weekId);
   };
 
   const handleAddItem = (weekId, item) => {
-    onWeeksChange((currentWeeks) =>
-      currentWeeks.map((week) =>
-        week.id === weekId ? { ...week, items: [...week.items, item] } : week,
-      ),
-    );
+    onAddItem?.(weekId, item);
   };
 
   const handleDeleteItem = (weekId, itemId) => {
@@ -56,11 +38,7 @@ export default function GroceryDrawer({ isOpen, onClose, weeks, currency, onWeek
   };
 
   const handleToggleCollapse = (weekId) => {
-    onWeeksChange((currentWeeks) =>
-      currentWeeks.map((week) =>
-        week.id === weekId ? { ...week, collapsed: !week.collapsed } : week,
-      ),
-    );
+    onToggleCollapse?.(weekId);
   };
 
   const handleEditItem = (weekId, item) => {
@@ -68,20 +46,7 @@ export default function GroceryDrawer({ isOpen, onClose, weeks, currency, onWeek
   };
 
   const saveEditedItem = (weekId, itemId, values) => {
-    onWeeksChange((currentWeeks) =>
-      currentWeeks.map((week) => {
-        if (week.id !== weekId) {
-          return week;
-        }
-
-        return {
-          ...week,
-          items: week.items.map((item) =>
-            item.id === itemId ? { ...item, ...values } : item,
-          ),
-        };
-      }),
-    );
+    onEditItem?.(weekId, itemId, values);
     setEditingItem(null);
   };
 

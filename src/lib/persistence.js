@@ -1,11 +1,6 @@
 export const STORAGE_KEYS = {
   categoryOrder: 'expense-tracker-category-order',
-  expenseEntries: 'expense-tracker-expense-entries',
-  normalGroceryEntries: 'expense-tracker-normal-grocery-entries',
-  groceryWeeks: 'expense-tracker-grocery-weeks',
-  monthlySalary: 'expense-tracker-monthly-salary',
   selectedMonth: 'expense-tracker-selected-month',
-  monthlyData: 'expense-tracker-monthly-data',
   currency: 'expense-tracker-currency',
 };
 

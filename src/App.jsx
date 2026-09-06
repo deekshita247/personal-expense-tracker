@@ -154,7 +154,7 @@ function App() {
     );
   }
 
-  return <Dashboard onLogout={handleLogout} isLoggingOut={false} />;
+  return <Dashboard user={user} onLogout={handleLogout} isLoggingOut={false} />;
 }
 
 export default App;

@@ -14,7 +14,7 @@ export default function GroceryWeek({ week, currency, onAddItem, onEditItem, onD
     }
 
     onAddItem(week.id, {
-      id: `${week.id}-${Date.now()}`,
+      id: crypto.randomUUID(),
       name: draftName.trim(),
       amount: Number(draftAmount),
     });
